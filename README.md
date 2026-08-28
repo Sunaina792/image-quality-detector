@@ -27,6 +27,17 @@ specific issue(s) present.
 | Image corruption / severe degradation | `corruption` — block-uniformity + neighbor-jump heuristic |
 | Potential visual defect | Surfaced in the UI as **"Visual Defect"** — the `corruption` model class doubles as the structural-anomaly / defect signal, since block-level discontinuities are the common underlying pattern for both corrupted files and structural image defects |
 
+### Screenshots
+
+**Blur detection**
+![Blur detection](blur-demo.png)
+
+**Visual defect detection**
+![Visual defect detection](clear-demo.png)
+
+**Analysis history**
+![Analysis history](history.png)
+
 ## 3. AI / Computer Vision Approach (assessment §3)
 
 **Hybrid: engineered CV features + Random Forest ensemble** — explicitly one
