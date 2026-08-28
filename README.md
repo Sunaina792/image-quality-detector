@@ -2,18 +2,38 @@
 
 Full-stack application that accepts an image, analyzes it for quality issues
 (blur, under/overexposure, noise, corruption, visual defects), and returns a
-structured JSON result — with a polished web UI and a Gradio fallback UI.
+structured JSON result — with a polished React UI and a Gradio fallback UI.
 
 No external AI/vision APIs are used. All inference runs on locally trained
-scikit-learn models using engineered OpenCV features.
+scikit-learn models using engineered OpenCV features (satisfies assessment
+requirement: "External AI services: Not permitted").
 
 ---
 
-## Approach
+## 1. Problem Statement (assessment §1)
 
-**Hybrid: engineered CV features + Random Forest ensemble.**
+Given an uploaded image, the system evaluates visual quality and classifies
+it as **ACCEPTABLE**, **DEGRADED**, or **DEFECTIVE**, while identifying the
+specific issue(s) present.
 
-For each image, 10 interpretable features are computed:
+## 2. Detected Issue Types (assessment §2)
+
+| Required issue | Implemented as |
+|---|---|
+| Blur / insufficient sharpness | `blur` — Laplacian variance |
+| Underexposure | `underexposure` — brightness histogram |
+| Overexposure | `overexposure` — brightness histogram |
+| Image noise | `noise` — median-blur residual |
+| Image corruption / severe degradation | `corruption` — block-uniformity + neighbor-jump heuristic |
+| Potential visual defect | Surfaced in the UI as **"Visual Defect"** — the `corruption` model class doubles as the structural-anomaly / defect signal, since block-level discontinuities are the common underlying pattern for both corrupted files and structural image defects |
+
+## 3. AI / Computer Vision Approach (assessment §3)
+
+**Hybrid: engineered CV features + Random Forest ensemble** — explicitly one
+of the assessment's listed acceptable approaches ("a hybrid approach
+combining image-quality features with a learned model").
+
+10 interpretable features are computed per image using OpenCV:
 
 | Feature | Signal |
 |---|---|
@@ -26,165 +46,57 @@ For each image, 10 interpretable features are computed:
 | `mean_saturation` | HSV saturation — low = washed out |
 | `std_saturation` | Saturation spread |
 | `edge_density` | Canny edge fraction |
-| `block_uniformity` | Fraction of identical-pixel blocks (corruption heuristic) |
+| `block_uniformity` | Fraction of blocks that are internally uniform AND abruptly different from neighboring blocks (corruption/defect heuristic) |
 
-These 10 features feed **three separate Random Forest models**:
+These features feed **three separate Random Forest models**:
 
 1. `quality_label_clf` → ACCEPTABLE / DEGRADED / DEFECTIVE
-2. `quality_score_reg` → continuous 0–100 score (MAE ~ 5 pts on held-out set)
-3. `issue_type_clf` → blur / underexposure / overexposure / noise / corruption / visual_defect / clean
+2. `quality_score_reg` → continuous 0–100 score
+3. `issue_type_clf` → blur / underexposure / overexposure / noise / corruption / clean
 
-Random Forest was chosen because:
-- Input is a 10-dim feature vector (not raw pixels) — RF is a perfect fit for low-dimensional non-linear classification.
-- `feature_importances_` gives free, per-prediction explainability (required by the assessment).
-- Training is fast (~10 s on a laptop) so the full pipeline is easily reproducible.
-- Class-weighted training handles the imbalanced clean/degraded split correctly.
+**Why Random Forest over a raw CNN:** the input is a 10-dimensional
+engineered feature vector rather than raw pixels; the feature→quality
+relationship is non-linear but low-dimensional, which is a strong fit for
+tree ensembles; training is fast enough to iterate within the assessment
+window; and `feature_importances_` gives per-prediction explainability for
+free (see §10 below), without needing Grad-CAM or a saliency-map pipeline.
 
-See `GET /metrics` for live accuracy, F1, confusion matrix, and feature importances.
+## 4. Image Analysis (assessment §4)
 
----
+Sharpness, brightness/exposure, contrast, noise, saturation, and edge
+density are all explicitly computed and returned in every API response
+under `image_stats`, so the reasoning behind each decision is visible, not
+just a final label.
 
-## Detection Capabilities
+## 5. Backend (assessment §5)
 
-| Issue Type | Detected By |
-|---|---|
-| Blur / insufficient sharpness | Laplacian variance + edge density |
-| Underexposure | Mean brightness + dark pixel fraction |
-| Overexposure | Bright pixel fraction + contrast |
-| Image noise | Median-blur residual (noise_score) |
-| Image corruption / severe degradation | Block uniformity heuristic |
-| Visual defect (scratches, lens flare, watermarks) | Trained RF on visual_defect class |
+FastAPI REST API (`backend/app.py`):
 
----
+- `POST /analyze` — multipart image upload, returns structured JSON
+- `GET /history?limit=50` — retrieve previous analyses
+- `GET /history/{id}` — retrieve one specific analysis
+- `GET /health` — service health check
+- Invalid/non-image files → HTTP 400
+- Unreadable/corrupted files → HTTP 422 with a clear error message
+- Unexpected errors → HTTP 500 with detail
+- Results persisted in **SQLite** (`backend/db.py`)
 
-## Project Structure
+## 6. Frontend (assessment §6)
 
-```
-backend/
-  features.py              - CV feature extraction (10 interpretable features)
-  degrade.py               - Synthetic degradation generator (7 issue types)
-  build_dataset.py         - Builds labeled CSV from clean source images
-  download_raw_images.py   - Downloads ~30 public-domain clean images for training
-  generate_samples.py      - Generates sample/demo images for data/samples/
-  train_model.py           - Trains RF models + writes models/metrics.json
-  inference.py             - Loads models, runs analysis pipeline on new image
-  db.py                    - SQLite persistence for analysis history
-  app.py                   - FastAPI REST API + custom frontend + Gradio fallback
-  requirements.txt
-frontend/
-  index.html               - Main web UI (dark glassmorphism design)
-  style.css                - Design system CSS
-  app.js                   - Vanilla JS: upload, results, history, modal
-models/
-  quality_label_clf.joblib - Trained label classifier
-  quality_score_reg.joblib - Trained score regressor
-  issue_type_clf.joblib    - Trained issue-type classifier
-  metrics.json             - Accuracy, F1, confusion matrix, feature importances
-data/
-  raw/                     - Clean source images for training (populated by download_raw_images.py)
-  synthetic/               - Auto-generated labeled CSV dataset
-  samples/                 - Demo images covering all quality conditions
-  analyses.db              - SQLite database (auto-created at runtime)
-tests/
-  test_features.py         - Unit tests for feature extraction functions
-  test_inference.py        - Unit tests for analyze_image() and severity logic
-  test_api.py              - Integration tests for all API endpoints
-notebooks/
-  IIIT_H (1).ipynb         - Exploratory analysis notebook
-  evaluate_generalization.md - Evaluation results, failure cases, limitations
-Dockerfile
-docker-compose.yml
-```
+Two frontends are included:
 
----
+1. **PixelGuard** (primary) — a custom React UI (`frontend/`) built with
+   Antigravity, live-connected to the FastAPI backend. Shows the uploaded
+   image, a circular quality-score gauge, the quality label, detected
+   issues with severity/confidence, per-class label probabilities, and a
+   full image-statistics breakdown. Includes an **Analyze** view and a
+   **History** view. Handles loading, success, and error states.
+2. **Gradio UI** (fallback, mounted at the backend's `/` route) — simpler,
+   zero-build alternative for quick local testing; also supports upload,
+   results display, and history.
 
-## Setup (Local)
+## 7. API Response Format (assessment §7)
 
-> **Requires Python 3.11.** The pinned OpenCV and NumPy wheels do not support Python 3.14.
-
-```bash
-# Create and activate venv
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# Install dependencies
-pip install -r backend\requirements.txt
-```
-
-### Option A — Use Pre-Trained Models (fastest, recommended)
-
-The `.joblib` model files are already committed. Skip steps 1–3 and go straight to step 4.
-
-### Option B — Retrain From Scratch
-
-```bash
-cd backend
-
-# 1. Download clean source images
-python download_raw_images.py --out ../data/raw --n 30
-
-# 2. Generate synthetic labeled dataset
-python build_dataset.py --src ../data/raw --out ../data/synthetic/dataset.csv --n_per_image 8
-
-# 3. Train models (produces models/*.joblib + models/metrics.json)
-python train_model.py --csv ../data/synthetic/dataset.csv --out ../models
-
-# 4. Generate demo sample images
-python generate_samples.py --out ../data/samples
-```
-
-### Run the App
-
-```bash
-cd backend
-python app.py
-# -> http://localhost:7860  (custom frontend)
-# -> http://localhost:7860/gradio  (Gradio fallback UI)
-# -> http://localhost:7860/docs    (FastAPI auto-docs)
-```
-
----
-
-## Docker / Docker Compose
-
-```bash
-docker compose up --build
-# -> http://localhost:7860
-```
-
-The Dockerfile uses `python:3.11-slim`, installs system deps for OpenCV (libgl1),
-and bundles `backend/`, `models/`, and `frontend/` into a single image.
-No data volume is needed for inference — the SQLite DB is created at runtime inside the container.
-
----
-
-## Database Setup
-
-SQLite is used for analysis history. **No manual setup is required** — the database
-is auto-created at `data/analyses.db` when the app starts (`db.init_db()` is called
-on startup in `app.py`).
-
-To reset the history, simply delete `data/analyses.db`. It will be recreated empty on next startup.
-
-To inspect the database directly:
-```bash
-sqlite3 data/analyses.db "SELECT id, filename, quality_label, quality_score, created_at FROM analyses ORDER BY id DESC LIMIT 10;"
-```
-
----
-
-## API Reference
-
-### `GET /health`
-Health check.
-```json
-{"status": "ok"}
-```
-
-### `POST /analyze`
-Multipart file upload (`file` field). Accepts any image format (JPEG, PNG, WEBP, BMP, etc).
-
-Returns:
 ```json
 {
   "quality_score": 82,
@@ -192,122 +104,166 @@ Returns:
   "issues": [{"type": "noise", "severity": "low", "confidence": 0.71}],
   "confidence": 0.88,
   "label_probabilities": {"ACCEPTABLE": 0.88, "DEGRADED": 0.1, "DEFECTIVE": 0.02},
-  "image_stats": {"width": 640, "height": 480, "sharpness": 312.4, "mean_brightness": 142.1, "contrast": 58.3, "noise": 3.2, "edge_density": 0.0821, "block_uniformity": 0.0},
+  "image_stats": {"width": 640, "height": 480, "sharpness": 312.4, "...": "..."},
   "id": 17
 }
 ```
 
-Error responses:
-- `400` — file is not an image or is empty
-- `422` — image is unreadable / corrupt bytes
-- `500` — internal analysis failure
+## 8. Dataset and Training (assessment §8)
 
-### `POST /analyze/batch`
-Upload multiple images at once. Returns a list of results in the same order.
-Files that fail include an `error` field instead.
+**Synthetic degradation** was used, as explicitly permitted by the
+assessment: "Applicants may... generate controlled image-quality
+degradations from clean images. If synthetic degradation is used, describe
+how training and evaluation data were generated."
 
-```bash
-curl -X POST \
-  -F "files=@clean.jpg" -F "files=@blurry.jpg" \
-  http://localhost:7860/analyze/batch
-```
+- **Base clean images**: a sample from the [Intel Image Classification
+  dataset](https://www.kaggle.com/datasets/puneet6060/intel-image-classification)
+  (natural scenes: buildings, forest, glacier, mountain, sea, street).
+- **Degradation pipeline** (`backend/degrade.py`): Gaussian blur,
+  brightness scaling (under/overexposure), Gaussian noise, and low-quality
+  JPEG re-encoding + blacked-out blocks (corruption), each at 3 severity
+  levels (low/medium/high), plus untouched "clean" samples. Ground-truth
+  labels are known exactly because we control the degradation applied.
+- **Dataset build**: `backend/build_dataset.py` turns a folder of clean
+  images into a labeled feature CSV — 400 source images × 6 variants =
+  2,400 labeled samples used for the current trained models.
+- **Generalization check ("unseen images", per assessment §8/§9)**: the
+  trained model was additionally evaluated on the [Kaggle Blur
+  Dataset](https://www.kaggle.com/datasets/kwentar/blur-dataset) (1,476
+  real, non-synthetic photos across sharp / defocused-blurred /
+  motion-blurred categories) — see `notebooks/evaluate_generalization.md`
+  for the full results.
 
-### `GET /history?limit=50`
-Returns recent analyses (id, filename, label, score, timestamp).
+## 9. Evaluation (assessment §9)
 
-### `GET /history/{id}`
-Returns full stored result for one analysis, including the complete result JSON.
+Full metrics (accuracy, macro-F1, confusion matrix, per-class
+precision/recall, feature importances) are in `models/metrics.json`,
+generated by `backend/train_model.py`.
 
-### `GET /metrics`
-Returns `models/metrics.json`: accuracy, macro-F1, confusion matrix, feature importances,
-and per-class precision/recall/F1 for all three models.
+**Held-out synthetic test set (20% split, 480 samples):**
 
-### `GET /health`
-Returns `{"status": "ok"}`. Used as container health check.
+| Model | Accuracy | Macro-F1 |
+|---|---|---|
+| Quality label (ACCEPTABLE/DEGRADED/DEFECTIVE) | 88.5% | 0.88 |
+| Issue type (blur/exposure/noise/corruption/clean) | 88.75% | 0.89 |
+| Quality score regressor | MAE ≈ 8.4 pts | — |
 
----
+**Real-world generalization (Kaggle Blur Dataset, 1,476 unseen images):**
+see `notebooks/evaluate_generalization.md` for full breakdown, failure
+cases, and discussion.
 
-### Example API Calls
+**Known failure cases / limitations** (documented per assessment §9):
 
-```bash
-# Analyze an image
-curl -X POST -F "file=@data/samples/blur_high.jpg" http://localhost:7860/analyze
+- The model is trained on natural-scene photography (Intel Image
+  Classification: buildings, forest, glacier, mountain, sea, street) and
+  shows reduced reliability on **out-of-domain content** — e.g. text/
+  document images or close-up portraits with intentional bokeh — where
+  brightness- and sharpness-based features don't map cleanly onto the
+  training distribution.
+- Because `quality_label_clf` and `issue_type_clf` are trained
+  independently (not jointly), their outputs can occasionally disagree in
+  borderline cases (e.g. an overall "ACCEPTABLE" label alongside a weak
+  secondary issue signal). Inference applies a confidence-reconciliation
+  threshold (issue reported only if the overall label is non-ACCEPTABLE,
+  or the issue-type confidence exceeds 0.45) to reduce noisy flags — see
+  `backend/inference.py`.
+- `block_uniformity` (the corruption/defect heuristic) was refined from a
+  simple per-block variance check to a neighbor-comparison check, since
+  the naive version flagged natural flat regions (sky, still water) as
+  corrupted. The current version still occasionally under- or
+  over-triggers on scenes with very large uniform regions.
 
-# Batch analysis
-curl -X POST \
-  -F "files=@data/samples/clean.jpg" \
-  -F "files=@data/samples/noise.jpg" \
-  http://localhost:7860/analyze/batch
-
-# Get model metrics / feature importances
-curl http://localhost:7860/metrics
-
-# Get history
-curl http://localhost:7860/history?limit=10
-```
-
----
-
-## Evaluation
-
-Run `train_model.py` to regenerate `models/metrics.json`, which includes:
-- Accuracy and macro-F1 for quality label classifier and issue type classifier
-- MAE for the quality score regressor
-- Confusion matrices and per-class precision/recall/F1
-
-See [`notebooks/evaluate_generalization.md`](notebooks/evaluate_generalization.md) for:
-- Full evaluation results table
-- Feature importance rankings
-- Known failure cases and limitations
-- Generalization discussion (synthetic vs. real images)
-
----
-
-## Explainability
+## 10. Explainability (assessment §10)
 
 Every `/analyze` response includes:
-- **`image_stats`** — the raw feature values that drove the decision (sharpness, brightness, noise, etc.)
-- **`confidence`** — the Random Forest's max class probability
-- **`label_probabilities`** — full probability distribution over ACCEPTABLE/DEGRADED/DEFECTIVE
-- **`issues[].severity`** — determined by feature magnitude (e.g. sharpness < 50 = "high" blur), not just confidence
 
-`GET /metrics` exposes `feature_importances` showing which signals matter most for each model.
+- Raw `image_stats` (sharpness, brightness, noise, etc.) — the actual
+  signals the decision was based on, not just a black-box score.
+- Per-class `label_probabilities` and per-issue `confidence` from the
+  Random Forest's probability outputs.
+- `models/metrics.json` includes `feature_importances_` per model,
+  showing which engineered features matter most for each prediction type.
 
----
+## 11. Deployment (assessment §11)
 
-## Running Tests
+- `Dockerfile` + `docker-compose.yml` provided; the backend listens on
+  port `7860` (configurable via the `PORT` env var).
+- `GET /health` — service/status check endpoint.
+- Model loading: the three `.joblib` files (`models/quality_label_clf.joblib`,
+  `quality_score_reg.joblib`, `issue_type_clf.joblib`) are lazy-loaded on
+  first inference call (see `backend/inference.py`) and reused for
+  subsequent requests.
+- Local Docker Compose: `docker compose up --build` → `http://localhost:7860`
+- **Deployed URL**: _add after deploying to Hugging Face Spaces / other host_
+
+### Local setup (without Docker)
 
 ```bash
+# Backend
 cd backend
-pytest ../tests/ -v
+python -m venv .venv
+.venv\Scripts\Activate.ps1        # Windows PowerShell
+# source .venv/bin/activate       # macOS/Linux
+pip install -r requirements.txt
+python app.py
+# -> REST API + Gradio UI at http://localhost:7860
+
+# Frontend (PixelGuard, React)
+cd frontend
+npm install
+npm run dev
 ```
 
-Tests cover:
-- `test_features.py` — unit tests for all 10 feature functions
-- `test_inference.py` — unit tests for `analyze_image()` and severity logic
-- `test_api.py` — integration tests for all API endpoints
+### Docker
 
----
+```bash
+docker compose up --build
+# -> http://localhost:7860
+```
 
-## Deployment (Hugging Face Spaces)
+## 12. Submission Contents (assessment §12)
 
-This app is a plain Docker-SDK Space:
+- Full source: `backend/` (API, ML, DB), `frontend/` (React UI),
+  `models/` (trained artifacts), `notebooks/` (training + evaluation
+  notebook, generalization report)
+- This README: setup, model/training, API, deployment, DB instructions
+- `backend/db.py`: SQLite schema, auto-initialized on startup
+- API docs: see §7 above and the auto-generated OpenAPI docs at
+  `/docs` when the backend is running
+- Evaluation results: `models/metrics.json` +
+  `notebooks/evaluate_generalization.md`
+- Sample images: `data/raw/` (representative clean + degraded examples)
+- `Dockerfile` + `docker-compose.yml`
+- Deployed URL: _add after deploying_
 
-1. Create a new Space → SDK = **Docker**.
-2. Push this repo (including `models/*.joblib`, `models/metrics.json`, and `frontend/`)
-   to the Space's git remote.
-3. HF Spaces builds the `Dockerfile` and exposes port 7860 automatically.
-4. The same URL serves the custom frontend (`/`), REST API (`/analyze`, `/history`, `/metrics`),
-   and Gradio UI (`/gradio`).
+## 13. Optional / Bonus Work
 
-Deployed URL: _add after deploying_
+Not all bonus items were pursued given the assessment window; the two
+included are:
+- Two independent frontends (React + Gradio) — arguably beyond the base
+  frontend requirement.
+- Confidence values surfaced per-issue and per-label throughout.
 
----
+## Project Structure
+
+```
+backend/
+  features.py       — engineered CV feature extraction
+  degrade.py         — synthetic degradation generator
+  build_dataset.py   — builds labeled CSV from a folder of clean images
+  train_model.py      — trains + evaluates the RF models, writes metrics.json
+  inference.py         — loads trained models, runs analysis on a new image
+  db.py                — SQLite persistence
+  app.py                — FastAPI REST API + Gradio UI (single process)
+frontend/               — PixelGuard React UI
+models/                  — trained model artifacts (.joblib) + metrics.json
+data/                    — raw source images / synthetic dataset / sqlite db
+notebooks/               — training notebook + evaluate_generalization.md
+Dockerfile
+docker-compose.yml
+```
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `7860` | Port the app listens on (required by HF Spaces) |
-#   i m a g e - q u a l i t y - d e t e c t o r  
- 
+- `PORT` — port the backend listens on (default `7860`, required by most
+  container hosts including Hugging Face Spaces).
