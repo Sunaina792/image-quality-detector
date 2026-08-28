@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+.venv311/
+.venv*/
+env/
+ENV/
+
+# Caches
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data directories (keep directory structure but ignore contents)
+data/raw/*
+!data/raw/.gitkeep
+data/synthetic/*
+!data/synthetic/.gitkeep
+data/*.db
+
+# Local configuration
+.env
+.idea/
+.vscode/

@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+.venv311
+.venv*
+.pytest_cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+data/analyses.db
+data/synthetic/dataset.csv
+tests/.pytest_cache

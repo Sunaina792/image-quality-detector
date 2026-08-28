@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PixelGuard — AI Image Quality Inspector</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>" />
+  <meta name="description" content="Upload any image and get an instant AI-powered quality analysis: sharpness, exposure, noise, corruption detection and more. No external APIs. All local." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">PixelGuard</span>
+      </div>
+      <nav class="nav">
+        <a href="#upload-section" class="nav-link" id="nav-analyze">Analyze</a>
+        <a href="#history-section" class="nav-link" id="nav-history">History</a>
+        <a href="/gradio" target="_blank" class="nav-link nav-link--subtle">API UI ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">AI-Powered · No External APIs</div>
+        <h1 class="hero-title">Image Quality<br /><span class="gradient-text">Inspector</span></h1>
+        <p class="hero-sub">Detect blur, exposure issues, noise, corruption and visual defects in seconds. Powered by computer vision + Random Forest ML — 100% local inference.</p>
+      </div>
+      <div class="hero-deco" aria-hidden="true">
+        <div class="deco-ring deco-ring--1"></div>
+        <div class="deco-ring deco-ring--2"></div>
+        <div class="deco-ring deco-ring--3"></div>
+      </div>
+    </section>
+
+    <!-- Upload + Result Section -->
+    <section class="section" id="upload-section">
+      <div class="container">
+        <div class="card-grid">
+
+          <!-- Upload Card -->
+          <div class="card" id="upload-card">
+            <div class="card-header">
+              <h2 class="card-title">Upload Image</h2>
+              <p class="card-sub">JPG, PNG, WEBP, BMP — any size</p>
+            </div>
+
+            <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Upload image drop zone">
+              <div class="drop-zone-idle" id="drop-idle">
+                <div class="drop-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <p class="drop-label">Drop image here</p>
+                <p class="drop-sub">or click to browse</p>
+              </div>
+              <div class="drop-zone-preview hidden" id="drop-preview">
+                <img id="preview-img" src="" alt="Preview" />
+                <div class="preview-overlay">
+                  <span class="preview-change">Click to change</span>
+                </div>
+              </div>
+              <input type="file" id="file-input" accept="image/*" class="file-input" aria-label="File upload input" />
+            </div>
+
+            <button class="btn btn--primary btn--full" id="analyze-btn" disabled>
+              <span class="btn-icon">⬡</span>
+              <span class="btn-text">Analyze Image</span>
+            </button>
+
+            <div class="error-box hidden" id="error-box" role="alert">
+              <span class="error-icon">⚠</span>
+              <span id="error-msg">Something went wrong.</span>
+            </div>
+          </div>
+
+          <!-- Result Card -->
+          <div class="card card--result" id="result-card">
+            <div class="result-empty" id="result-empty">
+              <div class="empty-icon">📊</div>
+              <p class="empty-label">Results will appear here</p>
+              <p class="empty-sub">Upload an image and click Analyze</p>
+            </div>
+
+            <!-- Loading State -->
+            <div class="result-loading hidden" id="result-loading">
+              <div class="spinner"></div>
+              <p class="loading-label">Analyzing image…</p>
+              <p class="loading-sub">Running CV feature extraction + RF inference</p>
+            </div>
+
+            <!-- Results -->
+            <div class="result-content hidden" id="result-content">
+              <div class="result-header">
+                <div class="score-ring" id="score-ring">
+                  <svg class="score-svg" viewBox="0 0 100 100">
+                    <circle class="score-track" cx="50" cy="50" r="42"/>
+                    <circle class="score-fill" id="score-fill-circle" cx="50" cy="50" r="42"/>
+                  </svg>
+                  <div class="score-inner">
+                    <span class="score-value" id="score-value">--</span>
+                    <span class="score-unit">/100</span>
+                  </div>
+                </div>
+                <div class="result-meta">
+                  <div class="quality-label" id="quality-label-chip">--</div>
+                  <div class="confidence-row">
+                    <span class="conf-label">Confidence</span>
+                    <div class="conf-bar-wrap">
+                      <div class="conf-bar" id="conf-bar"></div>
+                    </div>
+                    <span class="conf-value" id="conf-value">--%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Issues -->
+              <div class="section-label">Detected Issues</div>
+              <div class="issues-list" id="issues-list"></div>
+
+              <!-- Label Probabilities -->
+              <div class="section-label">Label Probabilities</div>
+              <div class="proba-grid" id="proba-grid"></div>
+
+              <!-- Image Stats -->
+              <div class="section-label">Image Statistics</div>
+              <div class="stats-grid" id="stats-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- History Section -->
+    <section class="section section--alt" id="history-section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Analysis History</h2>
+          <button class="btn btn--ghost btn--sm" id="refresh-btn">
+            <span id="refresh-icon">↻</span> Refresh
+          </button>
+        </div>
+
+        <div class="history-table-wrap">
+          <table class="history-table" id="history-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Filename</th>
+                <th>Label</th>
+                <th>Score</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr class="history-empty-row" id="history-empty-row">
+                <td colspan="6" class="history-empty">No analyses yet. Upload your first image above.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- History Detail Modal -->
+        <div class="modal-overlay hidden" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Analysis detail">
+          <div class="modal">
+            <div class="modal-header">
+              <h3 class="modal-title" id="modal-title">Analysis #--</h3>
+              <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>PixelGuard · AI Image Quality Inspector</span>
+      <span class="footer-links">
+        <a href="/docs" target="_blank">API Docs</a>
+        <a href="/metrics" target="_blank">Model Metrics</a>
+        <a href="/gradio" target="_blank">Gradio UI</a>
+      </span>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

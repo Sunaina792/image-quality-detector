@@ -1,0 +1,223 @@
+{
+  "quality_label": {
+    "accuracy": 0.8666666666666667,
+    "macro_f1": 0.8588927296263105,
+    "confusion_matrix": [
+      [
+        47,
+        0,
+        2
+      ],
+      [
+        2,
+        34,
+        1
+      ],
+      [
+        9,
+        2,
+        23
+      ]
+    ],
+    "classes": [
+      "ACCEPTABLE",
+      "DEFECTIVE",
+      "DEGRADED"
+    ],
+    "classification_report": {
+      "ACCEPTABLE": {
+        "precision": 0.8103448275862069,
+        "recall": 0.9591836734693877,
+        "f1-score": 0.8785046728971962,
+        "support": 49.0
+      },
+      "DEFECTIVE": {
+        "precision": 0.9444444444444444,
+        "recall": 0.918918918918919,
+        "f1-score": 0.9315068493150684,
+        "support": 37.0
+      },
+      "DEGRADED": {
+        "precision": 0.8846153846153846,
+        "recall": 0.6764705882352942,
+        "f1-score": 0.7666666666666667,
+        "support": 34.0
+      },
+      "accuracy": 0.8666666666666667,
+      "macro avg": {
+        "precision": 0.8798015522153454,
+        "recall": 0.8515243935412004,
+        "f1-score": 0.8588927296263105,
+        "support": 120.0
+      },
+      "weighted avg": {
+        "precision": 0.8727355339424305,
+        "recall": 0.8666666666666667,
+        "f1-score": 0.8631595755273902,
+        "support": 120.0
+      }
+    }
+  },
+  "quality_score_mae": 7.888687545032226,
+  "issue_type": {
+    "accuracy": 0.8833333333333333,
+    "macro_f1": 0.8869616453647019,
+    "confusion_matrix": [
+      [
+        10,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        13,
+        0,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        0,
+        3,
+        21,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        15,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        19,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        14,
+        0
+      ],
+      [
+        0,
+        3,
+        0,
+        0,
+        1,
+        0,
+        14
+      ]
+    ],
+    "classes": [
+      "blur",
+      "clean",
+      "corruption",
+      "noise",
+      "overexposure",
+      "underexposure",
+      "visual_defect"
+    ],
+    "classification_report": {
+      "blur": {
+        "precision": 1.0,
+        "recall": 0.8333333333333334,
+        "f1-score": 0.9090909090909091,
+        "support": 12.0
+      },
+      "clean": {
+        "precision": 0.65,
+        "recall": 0.8125,
+        "f1-score": 0.7222222222222222,
+        "support": 16.0
+      },
+      "corruption": {
+        "precision": 1.0,
+        "recall": 0.84,
+        "f1-score": 0.9130434782608695,
+        "support": 25.0
+      },
+      "noise": {
+        "precision": 1.0,
+        "recall": 0.9375,
+        "f1-score": 0.967741935483871,
+        "support": 16.0
+      },
+      "overexposure": {
+        "precision": 0.95,
+        "recall": 1.0,
+        "f1-score": 0.9743589743589743,
+        "support": 19.0
+      },
+      "underexposure": {
+        "precision": 0.9333333333333333,
+        "recall": 1.0,
+        "f1-score": 0.9655172413793104,
+        "support": 14.0
+      },
+      "visual_defect": {
+        "precision": 0.7368421052631579,
+        "recall": 0.7777777777777778,
+        "f1-score": 0.7567567567567568,
+        "support": 18.0
+      },
+      "accuracy": 0.8833333333333333,
+      "macro avg": {
+        "precision": 0.8957393483709273,
+        "recall": 0.8858730158730159,
+        "f1-score": 0.8869616453647019,
+        "support": 120.0
+      },
+      "weighted avg": {
+        "precision": 0.8981652046783625,
+        "recall": 0.8833333333333333,
+        "f1-score": 0.8868857325221885,
+        "support": 120.0
+      }
+    }
+  },
+  "feature_importances": {
+    "sharpness": 0.15478192615591319,
+    "mean_brightness": 0.09551910448381017,
+    "dark_pixel_fraction": 0.07044118239004114,
+    "bright_pixel_fraction": 0.06740946653735715,
+    "contrast": 0.12928964534599788,
+    "noise": 0.08755980269001898,
+    "mean_saturation": 0.06860493481124655,
+    "std_saturation": 0.06538602946296457,
+    "edge_density": 0.16073554398909162,
+    "block_uniformity": 0.10027236413355879
+  },
+  "n_train": 480,
+  "n_test": 120,
+  "feature_order": [
+    "sharpness",
+    "mean_brightness",
+    "dark_pixel_fraction",
+    "bright_pixel_fraction",
+    "contrast",
+    "noise",
+    "mean_saturation",
+    "std_saturation",
+    "edge_density",
+    "block_uniformity"
+  ]
+}
