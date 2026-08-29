@@ -20,6 +20,10 @@ requirement: "External AI services: Not permitted").
 
 ---
 
+## System Architecture
+
+![PixelGuard Architecture](pixelguard_architecture.svg)
+
 ## 1. Problem Statement (assessment §1)
 
 Given an uploaded image, the system evaluates visual quality and classifies
