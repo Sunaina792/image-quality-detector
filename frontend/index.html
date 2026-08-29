@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PixelGuard — AI Image Quality Inspector</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>" />
-  <meta name="description" content="Upload any image and get an instant AI-powered quality analysis: sharpness, exposure, noise, corruption detection and more. No external APIs. All local." />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>" />
+  <meta name="description"
+    content="Upload any image and get an instant AI-powered quality analysis: sharpness, exposure, noise, corruption detection and more. No external APIs. All local." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
+
 <body>
   <!-- Header -->
   <header class="header">
@@ -21,7 +26,7 @@
       <nav class="nav">
         <a href="#upload-section" class="nav-link" id="nav-analyze">Analyze</a>
         <a href="#history-section" class="nav-link" id="nav-history">History</a>
-        <a href="/gradio" target="_blank" class="nav-link nav-link--subtle">API UI ↗</a>
+        <a href="/docs" target="_blank" class="nav-link nav-link--subtle">API Docs ↗</a>
       </nav>
     </div>
   </header>
@@ -32,7 +37,8 @@
       <div class="hero-content">
         <div class="hero-badge">AI-Powered · No External APIs</div>
         <h1 class="hero-title">Image Quality<br /><span class="gradient-text">Inspector</span></h1>
-        <p class="hero-sub">Detect blur, exposure issues, noise, corruption and visual defects in seconds. Powered by computer vision + Random Forest ML — 100% local inference.</p>
+        <p class="hero-sub">Detect blur, exposure issues, noise, corruption and visual defects in seconds. Powered by
+          computer vision + Random Forest ML — 100% local inference.</p>
       </div>
       <div class="hero-deco" aria-hidden="true">
         <div class="deco-ring deco-ring--1"></div>
@@ -56,10 +62,11 @@
             <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Upload image drop zone">
               <div class="drop-zone-idle" id="drop-idle">
                 <div class="drop-icon">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                 </div>
                 <p class="drop-label">Drop image here</p>
@@ -105,8 +112,8 @@
               <div class="result-header">
                 <div class="score-ring" id="score-ring">
                   <svg class="score-svg" viewBox="0 0 100 100">
-                    <circle class="score-track" cx="50" cy="50" r="42"/>
-                    <circle class="score-fill" id="score-fill-circle" cx="50" cy="50" r="42"/>
+                    <circle class="score-track" cx="50" cy="50" r="42" />
+                    <circle class="score-fill" id="score-fill-circle" cx="50" cy="50" r="42" />
                   </svg>
                   <div class="score-inner">
                     <span class="score-value" id="score-value">--</span>
@@ -173,7 +180,8 @@
         </div>
 
         <!-- History Detail Modal -->
-        <div class="modal-overlay hidden" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Analysis detail">
+        <div class="modal-overlay hidden" id="modal-overlay" role="dialog" aria-modal="true"
+          aria-label="Analysis detail">
           <div class="modal">
             <div class="modal-header">
               <h3 class="modal-title" id="modal-title">Analysis #--</h3>
@@ -192,11 +200,11 @@
       <span class="footer-links">
         <a href="/docs" target="_blank">API Docs</a>
         <a href="/metrics" target="_blank">Model Metrics</a>
-        <a href="/gradio" target="_blank">Gradio UI</a>
       </span>
     </div>
   </footer>
 
   <script src="/static/app.js"></script>
 </body>
+
 </html>
