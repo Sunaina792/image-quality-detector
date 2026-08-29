@@ -1,8 +1,6 @@
 fastapi==0.115.0
 pydantic==2.9.2
 uvicorn[standard]==0.30.6
-gradio==4.44.1
-huggingface_hub<1.0
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 pandas==2.2.2
