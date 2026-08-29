@@ -1,5 +1,14 @@
 # PixelGuard — AI-Powered Image Quality & Defect Detection
 
+🔗 **Live Demo**: https://image-quality-detector.onrender.com/
+
+> **Note**: Hosted on Render's free tier — the first load after a period of
+> inactivity may take 20–30s for the server to wake up, and can briefly
+> show unstyled content while assets finish loading. A quick page refresh
+> resolves it. This is a free-tier cold-start limitation, not an
+> application bug.
+
+
 Full-stack application that accepts an image, analyzes it for quality issues
 (blur, under/overexposure, noise, corruption, visual defects), and returns a
 structured JSON result — with a polished React UI and a Gradio fallback UI.
