@@ -1,5 +1,7 @@
 # PixelGuard — AI-Powered Image Quality & Defect Detection
 
+> Built as a technical assessment submission for a software internship application at IIIT Hyderabad.
+
 🔗 **Live Demo**: https://image-quality-detector.onrender.com/
 
 > **Note**: Hosted on Render's free tier — the first load after a period of
